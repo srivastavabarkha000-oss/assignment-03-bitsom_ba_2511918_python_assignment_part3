@@ -1,0 +1,55 @@
+#Task 4: Logging to File
+
+import requests
+from datetime import datetime
+
+LOG_FILE = "error_log.txt"
+
+
+# Function to write logs
+def log_error(function_name, error_type, message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] ERROR in {function_name}: {error_type} — {message}\n"
+
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(log_entry)
+
+
+#Trigger 1: ConnectionError
+try:
+    bad_url = "https://this-host-does-not-exist-xyz.com/api"
+    response = requests.get(bad_url, timeout=5)
+except requests.exceptions.ConnectionError as e:
+    print("Connection error triggered.")
+    log_error("fetch_products", "ConnectionError", str(e))
+
+
+#Trigger 2: HTTP Error 404 
+try:
+    product_id = 999  # Non-existent product
+
+    response = requests.get(f"{"https://dummyjson.com"}/products/{product_id}", timeout=5)
+
+    if response.status_code != 200:
+        print("HTTP error triggered (product not found).")
+        log_error(
+            "lookup_product",
+            "HTTPError",
+            f"{response.status_code} Not Found for product ID {product_id}"
+        )
+
+except requests.exceptions.ConnectionError:
+    print("Connection failed while checking product.")
+except requests.exceptions.Timeout:
+    print("Request timed out.")
+except Exception as e:
+    log_error("lookup_product", "UnexpectedError", str(e))
+
+
+# Read and Display Log File
+print("\n--- Error Log Contents ---")
+try:
+    with open(LOG_FILE, "r", encoding="utf-8") as file:
+        print(file.read())
+except FileNotFoundError:
+    print("Log file not found.")
